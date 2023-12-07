@@ -1,0 +1,80 @@
+1) Using Langchain and Huggingface model
+------------------------------------------
+
+from langchain_core.runnables  import RunnablePassthrough
+from langchain.prompts import ChatPromptTemplate
+from langchain import HuggingFaceHub
+from langchain.schema.output_parser import StrOutputParser
+import os
+
+output_parser = StrOutputParser()
+os.environ["HUGGINGFACEHUB_API_TOKEN"]="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"
+llm=HuggingFaceHub(repo_id="google/flan-t5-large",model_kwargs={"temperature":0,"max_length":64})
+
+prompt1 = ChatPromptTemplate.from_template(
+    "who is the ceo of {topic}"
+)
+chain1 = (
+    {"topic": RunnablePassthrough()} 
+    | prompt1
+    | llm
+    | output_parser
+)
+
+output1=chain1.invoke("microsoft")
+
+prompt2 = ChatPromptTemplate.from_template(
+    "what all services does {topic} provides?"
+)
+chain2 = (
+    {"topic": RunnablePassthrough()} 
+    | prompt2
+    | llm
+    | output_parser
+)
+
+output2=chain2.invoke("microsoft")
+
+prompt3 = ChatPromptTemplate.from_template(
+    "what is the address of the headquarters of {topic}"
+)
+chain3 = (
+    {"topic": RunnablePassthrough()} 
+    | prompt3
+    | llm
+    | output_parser
+)
+
+output3=chain3.invoke("microsoft")
+
+print(f"ceo:{output1}")
+print(f"services:{output2}")
+print(f"address:{output3}")
+
+
+
+
+
+2) Using Langchain and google search
+----------------------------------------------------------
+from langchain.utilities import SerpAPIWrapper
+import os
+
+os.environ['SERPAPI_API_KEY'] = "38dab72beb6d9bbb2c8e5ba69a81e99ad797cff08ae33aad376f5071f6845002"
+serpapi = SerpAPIWrapper()
+
+input = 'Microsoft'
+
+search_queries = [
+    f"What are the services provided by {input}?",
+    f"How does {input} make money?",
+    f"Who is the CEO of {input}?"
+]
+
+search_results = []
+
+for query in search_queries:
+    result = serpapi.run(query)
+    search_results.append(result)
+
+print(search_results)
