@@ -1,0 +1,98 @@
+Code
+--------------------------------------------------------------------------------------
+
+import pandas as pd
+from langchain.utilities import SerpAPIWrapper
+import os
+import re
+import spacy
+from spacy.lang.en.stop_words import STOP_WORDS
+
+os.environ['SERPAPI_API_KEY'] = "74de943825ec6244c3a156be415a2cfaf1e8f08407cc92e41efd57919d828d84"
+serpapi = SerpAPIWrapper()
+
+# Read the Excel sheet
+df = pd.read_excel('company.xlsx')
+
+# Load the spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+# Iterate through the company names
+for company_name in df['company_name']:
+    search_queries = [
+        f"What are the products of {company_name}?",
+        f"What is the registered address of {company_name}?",
+        f"Who is the CEO of {company_name}?"
+    ]
+
+    search_results = []
+
+    # Retrieve search results for each query
+    for query in search_queries:
+        result = serpapi.run(query)
+        search_results.append(result)
+
+    # Text from the provided input
+    text = search_results[0]
+
+    # Process the text using spaCy
+    doc = nlp(text)
+
+    # Extract noun chunks
+    noun_chunks = [(chunk.text, chunk.root.text, chunk.root.dep_, chunk.root.head.text) for chunk in doc.noun_chunks]
+
+    extracted_items = [t[0] for t in noun_chunks if t[2] in ('dobj', 'conj')]
+
+    if isinstance(search_results[1], list) and all(isinstance(x, str) for x in search_results[1]):
+        
+        match = re.search(r'registered address[^;]*\d{5,6}', search_results[1], re.IGNORECASE)
+    else:
+        text1 = f"{search_results[1]}"
+        match = re.search(r'registered address[^;]*\d{5,6}', text1, re.IGNORECASE)
+
+    # Print the search results for each company
+    print(f"{company_name}:")
+    print()
+    print("PRODUCTS:")
+    print(extracted_items)
+    print("ADDRESS:")
+    if match:
+        print(match.group())
+    else:
+        print("Address not found")
+    print("CEO:")
+    print(search_results[2])
+    print()
+
+    search_results.clear()
+
+
+Output
+-----------------------------------------------------------
+
+Sify Technologies:
+
+PRODUCTS:
+['Technologies- ICT Service Provider Cloud', 'Digital', 'Data Centers', 'Network', 'Integration', 'Security']
+ADDRESS:
+Address not found
+CEO:
+Kamal Nath
+
+Jsw Steels:
+
+PRODUCTS:
+['a wide gamut', 'Hot Rolled', 'Cold Rolled', 'Bare', 'Pre', 'painted Galvanized & Galvalume®', 'TMT Rebars', 'Wire Rods', 'Special Steel']
+ADDRESS:
+Registered Address. JSW Centre, Bandra Kurla Complex,, Bandra (East), Mumbai Maharashtra 400051
+CEO:
+Jayant Acharya
+
+Viraj Profiles Limited:
+
+PRODUCTS:
+['stainless steel wire rods', 'stainless steel wires', 'stainless steel fasteners', 'stainless steel bright bars', 'stainless steel profiles', 'stainless steel flanges', 'sizes']
+ADDRESS:
+registered address G-34, MIDC TARAPUR INDUSTRIAL AREA, BOISAR, TALUKA- PALGHAR, DIST THANE TARAPUR MH IN 401506
+CEO:
+Neeraj Raja Kochhar - Founder
